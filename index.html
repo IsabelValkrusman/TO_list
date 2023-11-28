@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="et">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDo list</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <h2>ToDo listi lisamine</h2>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    
+    <script>
+        const myVue = Vue.createApp({
+            data() {
+                return {
+                    listInModal: { id: null },
+                    list: [],
+                    newList: { aeg: "", Laeg: "", aine: "", info: "", ulesanne: "", tahtis: "" },
+                }
+            },
+    
+            async created() {
+                this.list = await (await fetch('http://localhost:8080/list')).json();
+            },
+            methods: {
+                getList: async function (id) {
+                    this.listInModal = await (await fetch(`http://localhost:8080/list/${id}`)).json()
+                    let listInfoModal = new bootstrap.Modal(document.getElementById('listInfoModal', {}))
+                    listInfoModal.show()
+                },
+                openAddListModal: function () {
+                    let addListModal = new bootstrap.Modal(document.getElementById("addListModal", {}));
+                    addListModal.show();
+                },
+                addList: async function () {
+                    const response = await fetch("http://localhost:8080/list", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(this.newList)
+                    });
+                    if (response.ok) {
+                        this.list.push(this.newList);
+                        this.newList = { aeg: "", Laeg: "", aine: "", info: "", ulesanne: "", tahtis: "" };
+                        let addListModal = new bootstrap.Modal(document.getElementById("addListModal", {}));
+                        addListModal.hide();
+                    } else {
+                        console.error("Error when adding a list");
+                    }
+                },
+                deleteList: async function (id) {
+                    const confirmDelete = confirm("Are you sure you want to delete this list?");
+                    if (!confirmDelete) {
+                        return;
+                    }
+                    await fetch(`http://localhost:8080/list/${id}`, {
+                        method: 'DELETE',
+                    });
+                    this.list = this.list.filter(listi => listi.id !== id);
+                },
+            }
+        }).mount('#app');
+    </script>
+
+    <form @submit.prevent="addList">
+        <table>
+            <tr>
+                <td><label for="kuupäev">Kuupäev:</label></td>
+                <td><input type="date" v-model="newList.aeg" name="kuupäev" id="kuupäev" autofocus required></td>
+            </tr>
+            <tr>
+                <td><label for="tähtaeg">Tähtaeg:</label></td>
+                <td><input type="date" v-model="newList.Laeg" name="tähtaeg" id="tähtaeg" required></td>
+            </tr>
+            <tr>
+                <td><label for="õppeaine">Õppeaine:</label></td>
+                <td><input type="text" v-model="newList.aine" name="õppeaine" id="õppeaine" required></td>
+            </tr>
+            <tr>
+                <td><label for="info">Info:</label></td>
+                <td><input type="text" v-model="newList.info" name="info" id="info" required></td>
+            </tr>
+            <tr>
+                <td><label for="ülesanne">Ülesanne:</label></td>
+                <td><input type="text" v-model="newList.ulesanne" name="ülesanne" id="ülesanne" required></td>
+            </tr>
+            <tr>
+                <td><label for="tähtis">Tähtis:</label></td>
+                <td><input type="text" v-model="newList.tahtis" name="tähtis" id="tähtis" required></td>
+            </tr>
+            <tr>
+                <td><input type="submit" name="submit" id="submit" value="Lisa"></td>
+                <td></td>
+            </tr>
+        </table>
+    </form>
+
+    <div id="app">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Aeg</th>
+                    <th>Laeg</th>
+                    <th>Aine</th>
+                    <th>Info</th>
+                    <th>Ülesanne</th>
+                    <th>Tähtis</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="listi in list">
+                    <th @click="getList(listi.id)">
+                        <td>{{listInModal.id}}</td>
+                        <td>{{listInModal.aeg}}</td>
+                        <td>{{listInModal.Laeg}}</td>
+                        <td>{{listInModal.aine}}</td>
+                        <td>{{listInModal.info}}</td>
+                        <td>{{listInModal.ulesanne}}</td>
+                        <td>{{listInModal.tahtis}}</td>
+                    </th>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <br>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 8px;
+        }
+    </style>
+
+</body>
+
+</html>
